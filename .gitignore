@@ -6,6 +6,12 @@
 .classpath
 .project
 .settings
+.gitignore
 target
 hadoop-hdfs-project/hadoop-hdfs/downloads
 hadoop-hdfs-project/hadoop-hdfs-httpfs/downloads
+hadoop-common-project/hadoop-common/build/
+hadoop-common-project/hadoop-common/mainMethodMapFile.mapfile/
+hadoop-common-project/hadoop-common/test.set/
+hadoop-common-project/hadoop-common/test/
+hadoop-hdfs-project/hadoop-hdfs/build/

@@ -4,12 +4,13 @@ import java.io.IOException;
 import java.math.BigInteger;
 import org.apache.hadoop.fs.FSInputStream;
 import org.wtf.client.Client;
+import java.nio.ByteBuffer;
 
 public class WTFInputStream extends FSInputStream {
 	Client c;
 	long fd;
-	int SEEK_CUR = 1;
 	int SEEK_SET = 0;
+	int SEEK_CUR = 1;
 	int SEEK_END = 2;
 	
 	public WTFInputStream(Client c, long fd) {
@@ -86,7 +87,7 @@ public class WTFInputStream extends FSInputStream {
 		    	throw new IOException(c.error_location() + ": " + c.error_message());
 		    }
 		    
-		    java.nio.ByteBuffer bb = java.nio.ByteBuffer.wrap(buf, off, (int) data_sz[0]);
+		    ByteBuffer bb = ByteBuffer.wrap(buf, off, (int) data_sz[0]);
 		    bb.put(data, 0, (int) data_sz[0]);
 		    return (int) data_sz[0];
 	  }

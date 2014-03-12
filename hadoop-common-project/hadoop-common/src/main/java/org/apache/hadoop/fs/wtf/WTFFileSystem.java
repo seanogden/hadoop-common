@@ -2,7 +2,6 @@ package org.apache.hadoop.fs.wtf;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 
 import org.apache.hadoop.conf.Configuration;
@@ -20,6 +19,11 @@ public class WTFFileSystem extends FileSystem {
 
 	private URI uri;
 	private Client client;
+	private static int O_RDONLY = 0000;
+	@SuppressWarnings("unused")
+	private static int O_RDWR   = 0002;
+	private static int O_WRONLY = 0001;
+	private static int O_CREAT  = 0100;
 	
 	@Override
 	public String getScheme() {
@@ -50,31 +54,27 @@ public class WTFFileSystem extends FileSystem {
 
 	@Override
 	public FSDataInputStream open(Path f, int bufferSize) throws IOException {
-		//TODO: define O_RDONLY
-		int O_RDONLY = 0;
-		int[] status = {0};
-		
+		int[] status = {-1};
 		long fd = client.open(f.toString(), O_RDONLY, 0, 0, 0, status);
 		if (fd < 0) {
-			throw new IOException("Could not open file for reading.");
+			throw new IOException(client.error_location() + ": " + client.error_message());
 		}
-		return new FSDataInputStream(new WTFInputStream(fd));
+		return new FSDataInputStream(new WTFInputStream(client, fd));
 	}
 
 	@Override
 	public FSDataOutputStream create(Path f, FsPermission permission,
 			boolean overwrite, int bufferSize, short replication,
 			long blockSize, Progressable progress) throws IOException {
-		int O_WRONLY_CREAT = 0;
-		int[] status = {0};
 		
-		long fd = client.open(f.toString(), O_WRONLY_CREAT, 
+		int[] status = {-1};
+		long fd = client.open(f.toString(), O_WRONLY | O_CREAT, 
 							  0777, replication, blockSize, status);
 	    if (fd < 0) {
-	    	throw new IOException("Could not create output file.");
+	    	throw new IOException(client.error_location() + ": " + client.error_message());
 	    }
 	    
-	    return new FSDataOutputStream(new WTFOutputStream(fd), statistics);
+	    return new FSDataOutputStream(new WTFOutputStream(client, fd), statistics);
 	}
 
 	@Override
@@ -85,14 +85,20 @@ public class WTFFileSystem extends FileSystem {
 
 	@Override
 	public boolean rename(Path src, Path dst) throws IOException {
-		// TODO Auto-generated method stub
-		return false;
+		int[] status = {-1};
+		long ret = client.rename(src.getName(), dst.getName(), status);
+		if (ret < 0)
+			return false;
+		return true;
 	}
 
 	@Override
 	public boolean delete(Path f, boolean recursive) throws IOException {
-		// TODO Auto-generated method stub
-		return false;
+		int[] status = {-1};
+		long ret = client.unlink(f.getName(), status);
+		if (ret < 0)
+			return false;
+		return true;
 	}
 
 	@Override
@@ -104,7 +110,7 @@ public class WTFFileSystem extends FileSystem {
 
 	@Override
 	public void setWorkingDirectory(Path new_dir) {
-		int[] status = {0};
+		int[] status = {-1};
 		client.chdir(new_dir.toString(), status);
 	}
 
@@ -112,17 +118,17 @@ public class WTFFileSystem extends FileSystem {
 	public Path getWorkingDirectory() {
 		//TODO: figure out how to make this output a string.
 		String c = null;
-		int[] status = {0};
+		int[] status = {-1};
 		client.getcwd(c, 255, status);
 		return new Path(c);
 	}
 
 	@Override
 	public boolean mkdirs(Path f, FsPermission permission) throws IOException {
-		int[] status = {0};
+		int[] status = {-1};
 		long reqid = client.mkdir(f.toString(), FsPermission.getDirDefault().toShort(), status);
 		if (reqid < 0) {
-			throw new IOException("Could not mkdir");
+			throw new IOException(client.error_location() + ": " + client.error_message());
 		}
 		
 		return true;

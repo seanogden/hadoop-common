@@ -2,7 +2,13 @@ package org.apache.hadoop.fs.wtf;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
+
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.Path;
+
 import junit.framework.TestCase;
 
 
@@ -26,6 +32,23 @@ public class TestWTFFileSystem extends TestCase {
 		WTFFileSystem fs = new WTFFileSystem();
 		fs.initialize(URI.create(initializationUri), new Configuration());
 		assertEquals(URI.create(expectedUri), fs.getUri());
+		FSDataOutputStream os = fs.create(new Path("/foo"));
+		os.write("hello world".getBytes());
+		os.close();
+		
+		byte[] buf = new byte["hello world".length()];
+		FSDataInputStream is = fs.open(new Path("/foo"));
+		is.read(buf);
+		
+		assertTrue(Arrays.equals(buf, "hello world".getBytes()));
+		
+		fs.rename(new Path("/foo"), new Path("/bar"));
+		is = fs.open(new Path("/bar"));
+		buf = new byte["hello world".length()];
+		is.read(buf);
+		
+		assertTrue(Arrays.equals(buf, "hello world".getBytes()));
+		is.close();
 		fs.close();
 	}
 }

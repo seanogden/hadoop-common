@@ -88,7 +88,7 @@ public class WTFFileSystem extends FileSystem {
 		int[] status = {-1};
 		long ret = client.rename(src.getName(), dst.getName(), status);
 		if (ret < 0)
-			return false;
+			throw new IOException(client.error_location() + ": " + client.error_message());
 		return true;
 	}
 

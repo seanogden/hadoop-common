@@ -2,8 +2,10 @@ package org.apache.hadoop.fs.wtf;
 
 import java.io.IOException;
 import java.math.BigInteger;
+
 import org.apache.hadoop.fs.FSInputStream;
 import org.wtf.client.Client;
+
 import java.nio.ByteBuffer;
 
 public class WTFInputStream extends FSInputStream {
@@ -80,14 +82,18 @@ public class WTFInputStream extends FSInputStream {
 	  public synchronized int read(byte buf[], int off, int len) throws IOException {
 			int[] status = {-1};
 		    long[] data_sz = {buf.length - off < len ? buf.length - off : len};
+
+		    //System.out.println("b.length = " + buf.length + " off = " + off + " len = " + len);
+		    
 		    byte[] data = new byte[(int) data_sz[0]];
 		    long reqid = c.read_sync(fd, data, data_sz, status);
 		    if (reqid < 0)
 		    {
-		    	throw new IOException(c.error_location() + ": " + c.error_message());
+		    	return -1;
 		    }
-		    
+		    // XXX this would be avoided if we passed offset to the read call above
 		    ByteBuffer bb = ByteBuffer.wrap(buf, off, (int) data_sz[0]);
+		    //System.out.println("data_sz[0]=" + data_sz[0]);
 		    bb.put(data, 0, (int) data_sz[0]);
 		    return (int) data_sz[0];
 	  }

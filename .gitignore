@@ -14,4 +14,14 @@ hadoop-common-project/hadoop-common/build/
 hadoop-common-project/hadoop-common/mainMethodMapFile.mapfile/
 hadoop-common-project/hadoop-common/test.set/
 hadoop-common-project/hadoop-common/test/
+hadoop-common-project/hadoop-common/.*
+hadoop-common-project/hadoop-common/test*
 hadoop-hdfs-project/hadoop-hdfs/build/
+hadoop-common-project/hadoop-common/AvroFSInput/
+hadoop-common-project/hadoop-common/broken.seq
+hadoop-common-project/hadoop-common/createWriterOnExistingFile/
+hadoop-common-project/hadoop-common/hs_err_pid16900.log
+hadoop-common-project/hadoop-common/hs_err_pid8478.log
+hadoop-common-project/hadoop-common/hs_err_pid8517.log
+hadoop-common-project/hadoop-common/recursiveCreateDir/
+hadoop-common-project/hadoop-common/serializationAvailability

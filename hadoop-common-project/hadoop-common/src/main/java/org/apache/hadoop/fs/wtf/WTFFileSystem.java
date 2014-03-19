@@ -3,6 +3,8 @@ package org.apache.hadoop.fs.wtf;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -11,8 +13,12 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.fs.s3.Block;
+import org.apache.hadoop.fs.s3.INode;
 import org.apache.hadoop.util.Progressable;
 import org.wtf.client.Client;
+import org.wtf.client.StringVec;
+import org.wtf.client.wtf_file_attrs;
 
 
 public class WTFFileSystem extends FileSystem {
@@ -55,7 +61,8 @@ public class WTFFileSystem extends FileSystem {
 	@Override
 	public FSDataInputStream open(Path f, int bufferSize) throws IOException {
 		int[] status = {-1};
-		long fd = client.open(f.toString(), O_RDONLY, 0, 0, 0, status);
+		long fd = client.open(f.toUri().getPath(), O_RDONLY, 0, 0, 
+							  WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT, status);
 		if (fd < 0) {
 			throw new IOException(client.error_location() + ": " + client.error_message());
 		}
@@ -68,8 +75,12 @@ public class WTFFileSystem extends FileSystem {
 			long blockSize, Progressable progress) throws IOException {
 		
 		int[] status = {-1};
-		long fd = client.open(f.toString(), O_WRONLY | O_CREAT, 
-							  0777, replication, blockSize, status);
+		long fd = client.open(f.toUri().getPath(), 
+							  O_WRONLY | O_CREAT, 
+							  0777, 
+							  WTFConfigKeys.WTF_REPLICATION_DEFAULT, 
+							  WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT,
+							  status);
 	    if (fd < 0) {
 	    	throw new IOException(client.error_location() + ": " + client.error_message());
 	    }
@@ -86,7 +97,7 @@ public class WTFFileSystem extends FileSystem {
 	@Override
 	public boolean rename(Path src, Path dst) throws IOException {
 		int[] status = {-1};
-		long ret = client.rename(src.getName(), dst.getName(), status);
+		long ret = client.rename(src.toUri().getPath(), dst.toUri().getPath(), status);
 		if (ret < 0)
 			throw new IOException(client.error_location() + ": " + client.error_message());
 		return true;
@@ -95,29 +106,47 @@ public class WTFFileSystem extends FileSystem {
 	@Override
 	public boolean delete(Path f, boolean recursive) throws IOException {
 		int[] status = {-1};
-		long ret = client.unlink(f.getName(), status);
+		long ret = client.unlink(f.toUri().getPath(), status);
 		if (ret < 0)
 			return false;
 		return true;
 	}
-
+	
 	@Override
 	public FileStatus[] listStatus(Path f) throws FileNotFoundException,
 			IOException {
-		// TODO Auto-generated method stub
-		return null;
+		//System.out.println("listStatus(" + f.toUri().getPath() + ")");
+		StringVec fnames = client.ls(f.toUri().getPath());
+		ArrayList<FileStatus> fstats = new ArrayList<FileStatus>();
+
+		for (int i = 0; i < fnames.size(); ++i)
+		{
+			if (fnames.get(i).equals(f.toUri().getPath()))
+			{
+				continue;
+			}
+			
+			int[] status = {-1};
+			wtf_file_attrs fa = new wtf_file_attrs();
+			client.getattr(fnames.get(i), fa, status);
+			fstats.add(new WTFFileStatus(new Path(fnames.get(i)), fa));
+		}
+		
+		FileStatus[] ret = fstats.toArray(new FileStatus[fstats.size()]);
+		
+		return ret;
 	}
 
 	@Override
 	public void setWorkingDirectory(Path new_dir) {
 		int[] status = {-1};
-		client.chdir(new_dir.toString(), status);
+		client.chdir(new_dir.toUri().getPath(), status);
 	}
 
 	@Override
 	public Path getWorkingDirectory() {
 		//TODO: figure out how to make this output a string.
-		String c = null;
+		String c = new String(new byte[255]);
 		int[] status = {-1};
 		client.getcwd(c, 255, status);
 		return new Path(c);
@@ -126,17 +155,29 @@ public class WTFFileSystem extends FileSystem {
 	@Override
 	public boolean mkdirs(Path f, FsPermission permission) throws IOException {
 		int[] status = {-1};
-		long reqid = client.mkdir(f.toString(), FsPermission.getDirDefault().toShort(), status);
-		if (reqid < 0) {
-			throw new IOException(client.error_location() + ": " + client.error_message());
-		}
-		
+		//System.out.println("mkdirs " + f.toUri().getPath());
+		long reqid = client.mkdir(f.toUri().getPath(), FsPermission.getDirDefault().toShort(), status);		
 		return true;
 	}
 
 	@Override
 	public FileStatus getFileStatus(Path f) throws IOException {
-		return new FileStatus();
+		//System.out.println("getFileStatus(" + f.getName() + ")");
+		
+		int[] status = {-1};
+		wtf_file_attrs fa = new wtf_file_attrs();
+		
+	    if (client.getattr(f.toUri().getPath(), fa, status) < 0) {
+	        throw new FileNotFoundException(f + ": No such file or directory.");
+	    }
+	    
+		return new FileStatus(fa.getSize(), fa.getIs_dir()==1, 3, 4096, 0, f);
+	}
+	
+	private static class WTFFileStatus extends FileStatus {
+		WTFFileStatus(Path f, wtf_file_attrs fa) throws IOException {
+			super(fa.getSize(), fa.getIs_dir()==1, 3, 4096, 0, f);
+		}
 	}
 
 }

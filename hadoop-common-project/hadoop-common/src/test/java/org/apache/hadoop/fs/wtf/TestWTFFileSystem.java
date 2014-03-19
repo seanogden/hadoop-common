@@ -7,7 +7,10 @@ import java.util.Arrays;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
+
+import com.sun.security.ntlm.Client;
 
 import junit.framework.TestCase;
 
@@ -16,14 +19,6 @@ public class TestWTFFileSystem extends TestCase {
 	
 	public void testInitialize() throws IOException {
 	    initializationTest("wtf://a:b@c", "wtf://a:b@c");
-	    initializationTest("wtf://a:b@c/", "wtf://a:b@c");
-	    initializationTest("wtf://a:b@c/path", "wtf://a:b@c");
-	    initializationTest("wtf://a@c", "wtf://a@c");
-	    initializationTest("wtf://a@c/", "wtf://a@c");
-	    initializationTest("wtf://a@c/path", "wtf://a@c");
-	    initializationTest("wtf://c", "wtf://c");
-	    initializationTest("wtf://c/", "wtf://c");
-	    initializationTest("wtf://c/path", "wtf://c");
 	}
 
 	private void initializationTest(String initializationUri, String expectedUri)
@@ -31,6 +26,7 @@ public class TestWTFFileSystem extends TestCase {
 
 		WTFFileSystem fs = new WTFFileSystem();
 		fs.initialize(URI.create(initializationUri), new Configuration());
+		System.out.println(fs.getWorkingDirectory());
 		assertEquals(URI.create(expectedUri), fs.getUri());
 		FSDataOutputStream os = fs.create(new Path("/foo"));
 		os.write("hello world".getBytes());
@@ -42,12 +38,24 @@ public class TestWTFFileSystem extends TestCase {
 		
 		assertTrue(Arrays.equals(buf, "hello world".getBytes()));
 		
-		fs.rename(new Path("/foo"), new Path("/bar"));
-		is = fs.open(new Path("/bar"));
-		buf = new byte["hello world".length()];
-		is.read(buf);
+		FileStatus fstat = fs.getFileStatus(new Path("/foo"));
 		
-		assertTrue(Arrays.equals(buf, "hello world".getBytes()));
+		assertTrue(fstat.isFile());
+		assertEquals(fstat.getLen(), "hello world".length());
+		
+		fs.mkdirs(new Path("/bar"));
+		fs.mkdirs(new Path("/bar/baz"));
+		FileStatus[] st = fs.listStatus(new Path("/bar"));
+		assertEquals(st.length, 1);
+		
+		
+		
+		//fs.rename(new Path("/foo"), new Path("/bar"));
+		//is = fs.open(new Path("wtf:///bar"));
+		//buf = new byte["hello world".length()];
+		//is.read(buf);
+		
+		//assertTrue(Arrays.equals(buf, "hello world".getBytes()));
 		is.close();
 		fs.close();
 	}

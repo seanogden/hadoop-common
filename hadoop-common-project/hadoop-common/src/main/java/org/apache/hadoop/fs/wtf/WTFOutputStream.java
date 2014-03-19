@@ -21,6 +21,9 @@ public class WTFOutputStream extends OutputStream {
 		int[] status = {-1};
 	    long[] data_sz = {1};
 	   	byte[] data = {(byte) b};
+
+	   	//System.out.println("Writing " + new String(data));
+	   	
 	    long reqid = c.write_sync(fd, data, data_sz, 3, status);
 	    if (reqid < 0)
 	    {
@@ -33,7 +36,10 @@ public class WTFOutputStream extends OutputStream {
 		int[] status = {-1};
 	    long[] data_sz = {b.length - off < len ? b.length - off : len};
 	   	byte[] data = ByteBuffer.wrap(b, off, (int) data_sz[0]).array();
-	    long reqid = c.write_sync(fd, data, data_sz, 3, status);
+	   	
+	   	//System.out.println("Writing " + new String(data));
+	    //System.out.println("b.length = " + b.length + " off = " + off + " len = " + len);
+	   	long reqid = c.write_sync(fd, data, data_sz, 3, status);
 	    if (reqid < 0)
 	    {
 	    	throw new IOException(c.error_location() + ": " + c.error_message());

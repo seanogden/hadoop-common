@@ -47,11 +47,20 @@ public class WTFFileSystem extends FileSystem {
 		setConf(conf);
 		this.uri = URI.create(uri.getScheme() + "://" + uri.getAuthority());
 		
+		String host = uri.getHost();
+		int port = uri.getPort();
+		
+		if (host.equals(""))
+			host = conf.get(WTFConfigKeys.WTF_COORDINATOR_HOST_KEY,
+					 WTFConfigKeys.WTF_COORDINATOR_HOST_DEFAULT);
+		
+		if (port == 0)
+			port = conf.getInt(WTFConfigKeys.WTF_COORDINATOR_PORT_KEY, 
+					WTFConfigKeys.WTF_COORDINATOR_PORT_DEFAULT);
+			
 		this.client = new Client(
-				conf.get(WTFConfigKeys.WTF_COORDINATOR_HOST_KEY,
-						 WTFConfigKeys.WTF_COORDINATOR_HOST_DEFAULT),
-				conf.getInt(WTFConfigKeys.WTF_COORDINATOR_PORT_KEY, 
-							WTFConfigKeys.WTF_COORDINATOR_PORT_DEFAULT),
+				host,
+				port,
 			    conf.get(WTFConfigKeys.WTF_HYPERDEX_HOST_KEY,
 			    		 WTFConfigKeys.WTF_HYPERDEX_HOST_DEFAULT),
 				conf.getInt(WTFConfigKeys.WTF_HYPERDEX_PORT_KEY, 
@@ -73,7 +82,7 @@ public class WTFFileSystem extends FileSystem {
 	public FSDataOutputStream create(Path f, FsPermission permission,
 			boolean overwrite, int bufferSize, short replication,
 			long blockSize, Progressable progress) throws IOException {
-		
+		mkdirs(f.getParent());
 		int[] status = {-1};
 		long fd = client.open(f.toUri().getPath(), 
 							  O_WRONLY | O_CREAT, 
@@ -97,6 +106,14 @@ public class WTFFileSystem extends FileSystem {
 	@Override
 	public boolean rename(Path src, Path dst) throws IOException {
 		int[] status = {-1};
+
+		for(FileStatus st : listStatus(src))
+		{
+			rename(st.getPath(),
+					new Path(st.getPath().toUri().getPath().replace(src.toUri().getPath(), dst.toUri().getPath())));
+		}
+		
+		
 		long ret = client.rename(src.toUri().getPath(), dst.toUri().getPath(), status);
 		if (ret < 0)
 			throw new IOException(client.error_location() + ": " + client.error_message());
@@ -106,6 +123,7 @@ public class WTFFileSystem extends FileSystem {
 	@Override
 	public boolean delete(Path f, boolean recursive) throws IOException {
 		int[] status = {-1};
+		
 		long ret = client.unlink(f.toUri().getPath(), status);
 		if (ret < 0)
 			return false;
@@ -115,21 +133,39 @@ public class WTFFileSystem extends FileSystem {
 	@Override
 	public FileStatus[] listStatus(Path f) throws FileNotFoundException,
 			IOException {
-		//System.out.println("listStatus(" + f.toUri().getPath() + ")");
+		
+		f = fixRelativePart(f);
+		if (f.toUri().getPath().equals(""))
+		{
+			f = new Path("/");
+		}
+		
 		StringVec fnames = client.ls(f.toUri().getPath());
 		ArrayList<FileStatus> fstats = new ArrayList<FileStatus>();
 
 		for (int i = 0; i < fnames.size(); ++i)
 		{
-			if (fnames.get(i).equals(f.toUri().getPath()))
+			Path fname = new Path(fnames.get(i));
+			
+			if (fname.toUri().getPath().equals(f.toUri().getPath()))
+			{
+				continue;
+			}
+			
+			if (fname.isRoot())
+			{
+				continue;
+			}
+			
+			if (!fname.getParent().toUri().getPath().equals(f.toUri().getPath()))
 			{
 				continue;
 			}
 			
 			int[] status = {-1};
 			wtf_file_attrs fa = new wtf_file_attrs();
-			client.getattr(fnames.get(i), fa, status);
-			fstats.add(new WTFFileStatus(new Path(fnames.get(i)), fa));
+			client.getattr(fname.toUri().getPath(), fa, status);
+			fstats.add(new WTFFileStatus(fname, fa));
 		}
 		
 		FileStatus[] ret = fstats.toArray(new FileStatus[fstats.size()]);
@@ -155,14 +191,17 @@ public class WTFFileSystem extends FileSystem {
 	@Override
 	public boolean mkdirs(Path f, FsPermission permission) throws IOException {
 		int[] status = {-1};
-		//System.out.println("mkdirs " + f.toUri().getPath());
-		long reqid = client.mkdir(f.toUri().getPath(), FsPermission.getDirDefault().toShort(), status);		
+		f = fixRelativePart(f);
+		
+		while (!f.isRoot()){
+			long reqid = client.mkdir(f.toUri().getPath(), FsPermission.getDirDefault().toShort(), status);		
+			f = f.getParent();
+		}
 		return true;
 	}
 
 	@Override
 	public FileStatus getFileStatus(Path f) throws IOException {
-		//System.out.println("getFileStatus(" + f.getName() + ")");
 		
 		int[] status = {-1};
 		wtf_file_attrs fa = new wtf_file_attrs();
@@ -171,12 +210,14 @@ public class WTFFileSystem extends FileSystem {
 	        throw new FileNotFoundException(f + ": No such file or directory.");
 	    }
 	    
-		return new FileStatus(fa.getSize(), fa.getIs_dir()==1, 3, 4096, 0, f);
+		return new WTFFileStatus(f, fa);
 	}
 	
 	private static class WTFFileStatus extends FileStatus {
 		WTFFileStatus(Path f, wtf_file_attrs fa) throws IOException {
-			super(fa.getSize(), fa.getIs_dir()==1, 3, 4096, 0, f);
+			super(fa.getSize(), fa.getIs_dir()==1, 
+					(int) WTFConfigKeys.WTF_REPLICATION_DEFAULT, 
+					  WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT*1024, 0, f);
 		}
 	}
 

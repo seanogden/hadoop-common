@@ -18,7 +18,7 @@ import junit.framework.TestCase;
 public class TestWTFFileSystem extends TestCase {
 	
 	public void testInitialize() throws IOException {
-	    initializationTest("wtf://a:b@c", "wtf://a:b@c");
+	    initializationTest("wtf://127.0.0.1:1981/", "wtf://127.0.0.1:1981");
 	}
 
 	private void initializationTest(String initializationUri, String expectedUri)
@@ -46,10 +46,25 @@ public class TestWTFFileSystem extends TestCase {
 		fs.mkdirs(new Path("/bar"));
 		fs.mkdirs(new Path("/bar/baz"));
 		FileStatus[] st = fs.listStatus(new Path("/bar"));
-		assertEquals(st.length, 1);
+		assertEquals(1, st.length);
 		
+
+		st = fs.listStatus(new Path("/"));
+		assertEquals(2, st.length);
 		
+		st = fs.listStatus(new Path("wtf://127.0.0.1:1981/"));
+		assertEquals(2, st.length);
 		
+		st = fs.listStatus(new Path("wtf://127.0.0.1:1981"));
+		assertEquals(2, st.length);
+		
+		fs.create(new Path("/testoutput/_temporary/0/attempt_local363530570_0001_r_000000_0/part-r-00000"));
+		
+		fs.rename(new Path("/testoutput/_temporary/0/attempt_local363530570_0001_r_000000_0"), 
+				new Path("/testoutput/_temporary/0/task_local705735145_0001_r_000000"));
+		
+		st = fs.listStatus(new Path("/testoutput/_temporary/0/task_local705735145_0001_r_000000"));
+		assertEquals(1,st.length);
 		//fs.rename(new Path("/foo"), new Path("/bar"));
 		//is = fs.open(new Path("wtf:///bar"));
 		//buf = new byte["hello world".length()];

@@ -19,10 +19,12 @@
 package org.apache.hadoop.conf;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -2247,6 +2249,13 @@ public class Configuration implements Iterable<Map.Entry<String,String>>,
           if (!quiet) {
             LOG.debug("parsing File " + file);
           }
+          
+          BufferedReader br = new BufferedReader(new FileReader(file.getPath()));
+          String line = null;
+          while ((line = br.readLine()) != null) {
+            System.out.println(line);
+          }
+          
           doc = parse(builder, new BufferedInputStream(
               new FileInputStream(file)), ((Path)resource).toString());
         }

@@ -30,6 +30,7 @@ public class WTFFileSystem extends FileSystem {
 	private static int O_RDWR   = 0002;
 	private static int O_WRONLY = 0001;
 	private static int O_CREAT  = 0100;
+	private Path workingDir;
 	
 	@Override
 	public String getScheme() {
@@ -65,6 +66,8 @@ public class WTFFileSystem extends FileSystem {
 			    		 WTFConfigKeys.WTF_HYPERDEX_HOST_DEFAULT),
 				conf.getInt(WTFConfigKeys.WTF_HYPERDEX_PORT_KEY, 
 							WTFConfigKeys.WTF_HYPERDEX_PORT_DEFAULT));
+		this.workingDir =
+			      new Path("/user", System.getProperty("user.name")).makeQualified(this);
 	}  
 
 	@Override
@@ -175,17 +178,12 @@ public class WTFFileSystem extends FileSystem {
 
 	@Override
 	public void setWorkingDirectory(Path new_dir) {
-		int[] status = {-1};
-		client.chdir(new_dir.toUri().getPath(), status);
+		this.workingDir = new_dir;
 	}
 
 	@Override
 	public Path getWorkingDirectory() {
-		//TODO: figure out how to make this output a string.
-		String c = new String(new byte[255]);
-		int[] status = {-1};
-		client.getcwd(c, 255, status);
-		return new Path(c);
+		return this.workingDir;
 	}
 
 	@Override

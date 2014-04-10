@@ -26,4 +26,6 @@ public class WTFConfigKeys extends CommonConfigurationKeys {
 	  public static final short   WTF_COORDINATOR_PORT_DEFAULT = 1981;
 	  public static final String  WTF_HYPERDEX_PORT_KEY = "wtf.hyperdex.port";
 	  public static final short   WTF_HYPERDEX_PORT_DEFAULT = 1982;
+	  public static final String  WTF_BUFFER_DIR_KEY = "fs.wtf.buffer.dir";
+	  public static final String  WTF_BUFFER_DIR_DEFAULT = "/tmp";
 }

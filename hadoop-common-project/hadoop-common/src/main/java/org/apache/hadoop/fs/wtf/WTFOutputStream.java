@@ -78,12 +78,15 @@ public class WTFOutputStream extends OutputStream {
 			byte[] data = IOUtils.toByteArray(in);
 			long[] data_sz = {data.length};
 			int[] status = {-1};
-			c.write_sync(fd, data, data_sz, 3, status);
+			
+			System.out.println("Writing " + data_sz[0] + " bytes to WTF");
 			long reqid = c.write_sync(fd, data, data_sz, 3, status);
 			if (reqid < 0)
 			{
 				throw new IOException(c.error_location() + ": " + c.error_message());
 			}
+
+			System.out.println("Done.");
 			
 		} finally {
 			closeQuietly(in);
@@ -100,7 +103,7 @@ public class WTFOutputStream extends OutputStream {
 		}
 	}
 	private File newBackupFile() throws IOException {
-		File dir = new File(conf.get("fs.wtf.buffer.dir"));
+		File dir = new File(conf.get(WTFConfigKeys.WTF_BUFFER_DIR_KEY, WTFConfigKeys.WTF_BUFFER_DIR_DEFAULT));
 		if (!dir.exists() && !dir.mkdirs()) {
 			throw new IOException("Cannot create wtf buffer directory: " + dir);
 		}

@@ -37,6 +37,7 @@ public class TestWTFFileSystem extends TestCase {
 		is.read(buf);
 		
 		assertTrue(Arrays.equals(buf, "hello world".getBytes()));
+		System.out.println(new String(buf));
 		
 		FileStatus fstat = fs.getFileStatus(new Path("/foo"));
 		

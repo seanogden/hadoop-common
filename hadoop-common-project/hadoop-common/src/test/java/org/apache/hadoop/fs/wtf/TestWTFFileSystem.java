@@ -64,6 +64,9 @@ public class TestWTFFileSystem extends TestCase {
 				new Path("/testoutput/_temporary/0/task_local705735145_0001_r_000000"));
 		
 		st = fs.listStatus(new Path("/testoutput/_temporary/0/task_local705735145_0001_r_000000"));
+		
+		fs.delete(new Path("/testoutput"));
+		
 		assertEquals(1,st.length);
 		//fs.rename(new Path("/foo"), new Path("/bar"));
 		//is = fs.open(new Path("wtf:///bar"));

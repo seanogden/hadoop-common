@@ -4,7 +4,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -13,8 +12,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.fs.s3.Block;
-import org.apache.hadoop.fs.s3.INode;
 import org.apache.hadoop.util.Progressable;
 import org.wtf.client.Client;
 import org.wtf.client.StringVec;
@@ -97,7 +94,7 @@ public class WTFFileSystem extends FileSystem {
 	    	throw new IOException(client.error_location() + ": " + client.error_message());
 	    }
 	    
-	    return new FSDataOutputStream(new WTFOutputStream(client, fd), statistics);
+	    return new FSDataOutputStream(new WTFOutputStream(client, fd, getConf(), blockSize, bufferSize), statistics);
 	}
 
 	@Override

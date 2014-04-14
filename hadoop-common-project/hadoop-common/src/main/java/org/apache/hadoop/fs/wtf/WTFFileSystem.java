@@ -39,6 +39,15 @@ public class WTFFileSystem extends FileSystem {
 		return uri;
 	}
 
+	public WTFFileSystem()
+	{
+	}
+	
+	public WTFFileSystem(final URI uri, final Configuration conf) throws IOException
+	{
+		initialize(uri, conf);
+	}
+	
 	@Override
 	public void initialize(URI uri, Configuration conf) throws IOException {
 		super.initialize(uri, conf);

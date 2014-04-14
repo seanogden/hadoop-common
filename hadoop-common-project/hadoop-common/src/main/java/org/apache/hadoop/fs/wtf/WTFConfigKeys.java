@@ -28,4 +28,8 @@ public class WTFConfigKeys extends CommonConfigurationKeys {
 	  public static final short   WTF_HYPERDEX_PORT_DEFAULT = 1982;
 	  public static final String  WTF_BUFFER_DIR_KEY = "fs.wtf.buffer.dir";
 	  public static final String  WTF_BUFFER_DIR_DEFAULT = "/tmp";
+	  public static final String  WTF_STREAM_BUFFER_SIZE_KEY = "wtf.stream-buffer-size";
+	  public static final int  WTF_STREAM_BUFFER_SIZE_DEFAULT = 4096;
+	  public static final String  WTF_ENCRYPT_DATA_TRANSFER_KEY = "wtf.encrypt-data-transfer";
+	  public static final boolean WTF_ENCRYPT_DATA_TRANSFER_DEFAULT = false;
 }

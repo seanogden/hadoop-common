@@ -24,8 +24,7 @@ public class TestWTFFileSystem extends TestCase {
 	private void initializationTest(String initializationUri, String expectedUri)
 			throws IOException {
 
-		WTFFileSystem fs = new WTFFileSystem();
-		fs.initialize(URI.create(initializationUri), new Configuration());
+		WTFFileSystem fs = new WTFFileSystem(URI.create(initializationUri), new Configuration());
 		System.out.println(fs.getWorkingDirectory());
 		assertEquals(URI.create(expectedUri), fs.getUri());
 		FSDataOutputStream os = fs.create(new Path("/foo"));

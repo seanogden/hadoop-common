@@ -32,7 +32,7 @@ public class WTFAbstractFileSystem extends DelegateToFileSystem {
 	WTFAbstractFileSystem(final URI theUri, final Configuration conf) throws IOException,
 		      URISyntaxException {
 		    super(theUri, new WTFFileSystem(theUri, conf), conf, 
-		        theUri.getScheme(), false);
+		        "wtf", false);
 		  }
 	
 	@Override
@@ -58,7 +58,7 @@ public class WTFAbstractFileSystem extends DelegateToFileSystem {
 	  
 	  @Override
 	  public int getUriDefaultPort() {
-	    return WTFConfigKeys.WTF_COORDINATOR_PORT_DEFAULT; // No default port for file:///
+	    return WTFConfigKeys.WTF_COORDINATOR_PORT_DEFAULT;
 	  }
 
 

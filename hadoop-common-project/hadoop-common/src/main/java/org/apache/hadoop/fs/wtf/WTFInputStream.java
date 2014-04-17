@@ -75,7 +75,14 @@ public class WTFInputStream extends FSInputStream {
 		    	throw new IOException(c.error_location() + ": " + c.error_message());
 		    }
 		    
-		    return (int) data[0];
+		    
+		    int ret = (int)data[0];
+		    if (ret < 0)
+		    	ret = ret + 256;
+		    
+		    System.err.println("read() returned " + data[0] + " => " + ret);
+		    
+		    return ret;
 	  }
 
 	  @Override

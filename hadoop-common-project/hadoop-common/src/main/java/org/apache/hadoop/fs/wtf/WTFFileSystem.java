@@ -79,12 +79,21 @@ public class WTFFileSystem extends FileSystem {
 	@Override
 	public FSDataInputStream open(Path f, int bufferSize) throws IOException {
 		int[] status = {-1};
-		long fd = client.open(f.toUri().getPath(), O_RDONLY, 0, 0, 
-							  WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT, status);
-		if (fd < 0) {
+		int[] fd = {-1};
+		long reqid = client.open(f.toUri().getPath(), O_RDONLY, 0, 0, 
+							  WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT, fd, status);
+		if (reqid < 0)
+		{
 			throw new IOException(client.error_location() + ": " + client.error_message());
 		}
-		return new FSDataInputStream(new WTFInputStream(client, fd));
+		
+		reqid = client.loop(reqid, -1, status);
+		if (reqid < 0 || fd[0] < 0) 
+		{
+			throw new IOException(client.error_location() + ": " + client.error_message());
+		}
+		
+		return new FSDataInputStream(new WTFInputStream(client, fd[0]));
 	}
 
 	@Override
@@ -93,17 +102,26 @@ public class WTFFileSystem extends FileSystem {
 			long blockSize, Progressable progress) throws IOException {
 		mkdirs(f.getParent());
 		int[] status = {-1};
-		long fd = client.open(f.toUri().getPath(), 
+		int[] fd = {-1};
+		long reqid = client.open(f.toUri().getPath(), 
 							  O_WRONLY | O_CREAT, 
 							  0777, 
 							  WTFConfigKeys.WTF_REPLICATION_DEFAULT, 
 							  WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT,
+							  fd,
 							  status);
-	    if (fd < 0) {
-	    	throw new IOException(client.error_location() + ": " + client.error_message());
-	    }
+		if (reqid < 0)
+		{
+			throw new IOException(client.error_location() + ": " + client.error_message());
+		}
+		
+		reqid = client.loop(reqid, -1, status);
+		if (reqid < 0 || fd[0] < 0) 
+		{
+			throw new IOException(client.error_location() + ": " + client.error_message());
+		}
 	    
-	    return new FSDataOutputStream(new WTFOutputStream(client, fd, getConf(), blockSize, bufferSize), statistics);
+	    return new FSDataOutputStream(new WTFOutputStream(client, fd[0], getConf(), blockSize, bufferSize), statistics);
 	}
 
 	@Override
@@ -210,10 +228,12 @@ public class WTFFileSystem extends FileSystem {
 		int[] status = {-1};
 		wtf_file_attrs fa = new wtf_file_attrs();
 		
-	    if (client.getattr(f.toUri().getPath(), fa, status) < 0) {
+	    if (client.getattr_sync(f.toUri().getPath(), fa, status) < 0) {
 	        throw new FileNotFoundException(f + ": No such file or directory.");
 	    }
-	    
+
+		System.out.println("size = " + fa.getSize());
+		
 		return new WTFFileStatus(f, fa);
 	}
 	

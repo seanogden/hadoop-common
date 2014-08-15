@@ -114,9 +114,12 @@ public class JobSplit {
       locations = new String[len];
       for (int i = 0; i < locations.length; i++) {
         locations[i] = Text.readString(in);
+        System.out.println("LOCATION: " + locations[i]);
       }
       startOffset = WritableUtils.readVLong(in);
+      System.out.println("START OFFSET: " + startOffset);
       inputDataLength = WritableUtils.readVLong(in);
+      System.out.println("INPUT LENGTH: " + inputDataLength);
     }
   
     public void write(DataOutput out) throws IOException {

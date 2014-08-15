@@ -531,6 +531,7 @@ public class JobConf extends Configuration {
    */
   public void setJarByClass(Class cls) {
     String jar = ClassUtil.findContainingJar(cls);
+    LOG.debug("Jar path is: " + jar);
     if (jar != null) {
       setJar(jar);
     }   

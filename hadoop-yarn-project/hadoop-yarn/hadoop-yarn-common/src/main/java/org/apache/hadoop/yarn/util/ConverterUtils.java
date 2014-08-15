@@ -64,6 +64,7 @@ public class ConverterUtils {
    * @throws URISyntaxException
    */
   public static Path getPathFromYarnURL(URL url) throws URISyntaxException {
+	
     String scheme = url.getScheme() == null ? "" : url.getScheme();
     
     String authority = "";
@@ -77,7 +78,10 @@ public class ConverterUtils {
       }
     }
     
-    return new Path(
+    if (scheme.equals(""))
+    	return new Path(new URI(url.getFile()));
+    else
+    	return new Path(
         (new URI(scheme, authority, url.getFile(), null, null)).normalize());
   }
   

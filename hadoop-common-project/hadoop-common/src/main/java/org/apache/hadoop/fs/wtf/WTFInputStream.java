@@ -5,6 +5,7 @@ import java.math.BigInteger;
 
 import org.apache.hadoop.fs.FSInputStream;
 import org.wtf.client.Client;
+import org.wtf.client.WTFClientException;
 
 import java.nio.ByteBuffer;
 
@@ -66,15 +67,20 @@ public class WTFInputStream extends FSInputStream {
 
 	  @Override
 	  public synchronized int read() throws IOException {
-			int[] status = {-1};
-		    long[] data_sz = {1};
 		    byte[] data = {0};
-		    long reqid = c.read_sync(fd, data, data_sz, status);
-		    if (reqid < 0)
+		    int offset = 0;
+		    Boolean ok;
+			try {
+				ok = c.read(fd, data, offset);
+			} catch (WTFClientException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		    if (!ok)
 		    {
-		    	throw new IOException(c.error_location() + ": " + c.error_message());
+		    	throw new IOException("Error reading");
 		    }
-		    
 		    
 		    int ret = (int)data[0];
 		    if (ret < 0)

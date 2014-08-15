@@ -10,8 +10,6 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 
-import com.sun.security.ntlm.Client;
-
 import junit.framework.TestCase;
 
 
@@ -41,7 +39,7 @@ public class TestWTFFileSystem extends TestCase {
 		FileStatus fstat = fs.getFileStatus(new Path("/foo"));
 		
 		assertTrue(fstat.isFile());
-		assertEquals(fstat.getLen(), "hello world".length());
+		assertEquals("hello world".length(), fstat.getLen());
 		
 		fs.mkdirs(new Path("/bar"));
 		fs.mkdirs(new Path("/bar/baz"));

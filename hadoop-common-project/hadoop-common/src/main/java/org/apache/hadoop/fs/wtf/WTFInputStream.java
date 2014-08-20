@@ -1,13 +1,9 @@
 package org.apache.hadoop.fs.wtf;
 
 import java.io.IOException;
-import java.math.BigInteger;
-
 import org.apache.hadoop.fs.FSInputStream;
 import org.wtf.client.Client;
 import org.wtf.client.WTFClientException;
-
-import java.nio.ByteBuffer;
 
 public class WTFInputStream extends FSInputStream {
 	Client c;
@@ -23,38 +19,36 @@ public class WTFInputStream extends FSInputStream {
 
 	  @Override
 	  public synchronized long getPos() throws IOException {
-		  int[] status = {-1};
-		  long offset = c.lseek(fd, BigInteger.ZERO, SEEK_CUR, status);
-		  if (offset < 0)
+		  long[] offset = {0};
+		  Boolean ok = c.lseek(fd, offset, SEEK_CUR);
+		  if (!ok)
 		  {
 			  throw new IOException(c.error_location() + ": " + c.error_message());
 		  }
-		  
-		  return offset;
+
+		  return offset[0];
 	  }
 
 	  @Override
 	  public synchronized int available() throws IOException {
 		  long cur = getPos();
-		  
-		  int[] status = {-1};
-		  
-		  long length = c.lseek(fd, BigInteger.ZERO, SEEK_END, status);
-		  if (length < 0)
+		  long[] offset = {0};
+		  Boolean ok = c.lseek(fd, offset, SEEK_END);
+		  if (!ok)
 		  {
 			  throw new IOException(c.error_location() + ": " + c.error_message());
 		  }
 		  
 		  seek(cur);
 		  
-		  return (int) (length - cur);
+		  return (int) (offset[0] - cur);
 	  }
 
 	  @Override
 	  public synchronized void seek(long targetPos) throws IOException {
-		  int[] status = {-1};
-		  long offset = c.lseek(fd, BigInteger.valueOf(targetPos), SEEK_SET, status);
-		  if (offset < 0)
+		  long[] offset = {targetPos};
+		  Boolean ok = c.lseek(fd, offset, SEEK_SET);
+		  if (!ok)
 		  {
 			  throw new IOException(c.error_location() + ": " + c.error_message());
 		  }
@@ -69,18 +63,21 @@ public class WTFInputStream extends FSInputStream {
 	  public synchronized int read() throws IOException {
 		    byte[] data = {0};
 		    int offset = 0;
-		    Boolean ok;
+
 			try {
-				ok = c.read(fd, data, offset);
+				Boolean ok = c.read(fd, data, offset);
+				
+			    if (!ok)
+			    {
+			    	throw new IOException("Error reading");
+			    }
+			    
 			} catch (WTFClientException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
-		    if (!ok)
-		    {
-		    	throw new IOException("Error reading");
-		    }
+
 		    
 		    int ret = (int)data[0];
 		    if (ret < 0)
@@ -93,22 +90,21 @@ public class WTFInputStream extends FSInputStream {
 
 	  @Override
 	  public synchronized int read(byte buf[], int off, int len) throws IOException {
-			int[] status = {-1};
-		    long[] data_sz = {buf.length - off < len ? buf.length - off : len};
 
-		    //System.out.println("b.length = " + buf.length + " off = " + off + " len = " + len);
+		    try {
+				Boolean ok = c.read(fd, buf, off);
+			    
+				if (!ok)
+			    {
+			    	throw new IOException("Error reading");
+			    }
+			} catch (WTFClientException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		    
-		    byte[] data = new byte[(int) data_sz[0]];
-		    long reqid = c.read_sync(fd, data, data_sz, status);
-		    if (reqid < 0)
-		    {
-		    	return -1;
-		    }
-		    // XXX this would be avoided if we passed offset to the read call above
-		    ByteBuffer bb = ByteBuffer.wrap(buf, off, (int) data_sz[0]);
-		    //System.out.println("data_sz[0]=" + data_sz[0]);
-		    bb.put(data, 0, (int) data_sz[0]);
-		    return (int) data_sz[0];
+		    //TODO add parameter to read to get read length
+		    return (int) buf.length;
 	  }
 
 	  /**

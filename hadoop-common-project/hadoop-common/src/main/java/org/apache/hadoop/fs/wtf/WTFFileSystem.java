@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -14,8 +15,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
 import org.wtf.client.Client;
-import org.wtf.client.StringVec;
-import org.wtf.client.wtf_file_attrs;
+import org.wtf.client.Iterator;
+import org.wtf.client.WTFClientException;
+import org.wtf.client.WTFFileAttrs;
 
 
 public class WTFFileSystem extends FileSystem {
@@ -78,20 +80,21 @@ public class WTFFileSystem extends FileSystem {
 
 	@Override
 	public FSDataInputStream open(Path f, int bufferSize) throws IOException {
-		int[] status = {-1};
-		int[] fd = {-1};
-		long reqid = client.open(f.toUri().getPath(), O_RDONLY, 0, 0, 
-							  WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT, fd, status);
-		if (reqid < 0)
-		{
-			throw new IOException(client.error_location() + ": " + client.error_message());
+		long[] fd = {-1};
+		Boolean ok = false;
+		try {
+			ok = client.open(f.toUri().getPath(), O_RDONLY, 0, 0, 
+								  (int) WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT, fd);
+		} catch (WTFClientException e) {
+			
+			if (!ok)
+			{
+				throw new IOException(client.error_location() + ": " + client.error_message());
+			}
+			
+			e.printStackTrace();
 		}
-		
-		reqid = client.loop(reqid, -1, status);
-		if (reqid < 0 || fd[0] < 0) 
-		{
-			throw new IOException(client.error_location() + ": " + client.error_message());
-		}
+
 		
 		return new FSDataInputStream(new WTFInputStream(client, fd[0]));
 	}
@@ -101,25 +104,20 @@ public class WTFFileSystem extends FileSystem {
 			boolean overwrite, int bufferSize, short replication,
 			long blockSize, Progressable progress) throws IOException {
 		mkdirs(f.getParent());
-		int[] status = {-1};
-		int[] fd = {-1};
-		long reqid = client.open(f.toUri().getPath(), 
-							  O_WRONLY | O_CREAT, 
-							  0777, 
-							  WTFConfigKeys.WTF_REPLICATION_DEFAULT, 
-							  WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT,
-							  fd,
-							  status);
-		if (reqid < 0)
-		{
+		long[] fd = {-1};
+		Boolean ok;
+		try {
+			ok = client.open(f.toUri().getPath(), 
+								  O_WRONLY | O_CREAT, 
+								  0777, 
+								  (int) WTFConfigKeys.WTF_REPLICATION_DEFAULT, 
+								  (int)WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT,
+								  fd);
+		} catch (WTFClientException e) {
+			e.printStackTrace();
 			throw new IOException(client.error_location() + ": " + client.error_message());
 		}
-		
-		reqid = client.loop(reqid, -1, status);
-		if (reqid < 0 || fd[0] < 0) 
-		{
-			throw new IOException(client.error_location() + ": " + client.error_message());
-		}
+
 	    
 	    return new FSDataOutputStream(new WTFOutputStream(client, fd[0], getConf(), blockSize, bufferSize), statistics);
 	}
@@ -132,7 +130,6 @@ public class WTFFileSystem extends FileSystem {
 
 	@Override
 	public boolean rename(Path src, Path dst) throws IOException {
-		int[] status = {-1};
 
 		for(FileStatus st : listStatus(src))
 		{
@@ -141,20 +138,17 @@ public class WTFFileSystem extends FileSystem {
 		}
 		
 		
-		long ret = client.rename(src.toUri().getPath(), dst.toUri().getPath(), status);
-		if (ret < 0)
+		Boolean ok = client.rename(src.toUri().getPath(), dst.toUri().getPath());
+		if (!ok)
 			throw new IOException(client.error_location() + ": " + client.error_message());
 		return true;
 	}
 
 	@Override
 	public boolean delete(Path f, boolean recursive) throws IOException {
-		int[] status = {-1};
 		
-		long ret = client.unlink(f.toUri().getPath(), status);
-		if (ret < 0)
-			return false;
-		return true;
+		Boolean ok = client.unlink(f.toUri().getPath());
+		return ok;
 	}
 	
 	@Override
@@ -167,12 +161,13 @@ public class WTFFileSystem extends FileSystem {
 			f = new Path("/");
 		}
 		
-		StringVec fnames = client.ls(f.toUri().getPath());
-		ArrayList<FileStatus> fstats = new ArrayList<FileStatus>();
-
-		for (int i = 0; i < fnames.size(); ++i)
+		Iterator it = client.readdir(f.toUri().getPath());
+		
+		List<FileStatus> fstats = new ArrayList<FileStatus>();
+		
+		while (it.hasNext())
 		{
-			Path fname = new Path(fnames.get(i));
+			Path fname = new Path((String)it.next());
 			
 			if (fname.toUri().getPath().equals(f.toUri().getPath()))
 			{
@@ -189,9 +184,8 @@ public class WTFFileSystem extends FileSystem {
 				continue;
 			}
 			
-			int[] status = {-1};
-			wtf_file_attrs fa = new wtf_file_attrs();
-			client.getattr(fname.toUri().getPath(), fa, status);
+			WTFFileAttrs fa = new WTFFileAttrs();
+			client.getattr(fname.toUri().getPath(), fa);
 			fstats.add(new WTFFileStatus(fname, fa));
 		}
 		
@@ -212,11 +206,10 @@ public class WTFFileSystem extends FileSystem {
 
 	@Override
 	public boolean mkdirs(Path f, FsPermission permission) throws IOException {
-		int[] status = {-1};
 		f = fixRelativePart(f);
 		
 		while (!f.isRoot()){
-			long reqid = client.mkdir(f.toUri().getPath(), FsPermission.getDirDefault().toShort(), status);		
+			Boolean ok = client.mkdir(f.toUri().getPath(), FsPermission.getDirDefault().toShort());		
 			f = f.getParent();
 		}
 		return true;
@@ -225,21 +218,20 @@ public class WTFFileSystem extends FileSystem {
 	@Override
 	public FileStatus getFileStatus(Path f) throws IOException {
 		
-		int[] status = {-1};
-		wtf_file_attrs fa = new wtf_file_attrs();
+		WTFFileAttrs fa = new WTFFileAttrs();
 		
-	    if (client.getattr_sync(f.toUri().getPath(), fa, status) < 0) {
+	    if (!client.getattr(f.toUri().getPath(), fa)) {
 	        throw new FileNotFoundException(f + ": No such file or directory.");
 	    }
 
-		System.out.println("size = " + fa.getSize());
+		System.out.println("size = " + fa.size);
 		
 		return new WTFFileStatus(f, fa);
 	}
 	
 	private static class WTFFileStatus extends FileStatus {
-		WTFFileStatus(Path f, wtf_file_attrs fa) throws IOException {
-			super(fa.getSize(), fa.getIs_dir()==1, 
+		WTFFileStatus(Path f, WTFFileAttrs fa) throws IOException {
+			super(fa.size, fa.isDir==1, 
 					(int) WTFConfigKeys.WTF_REPLICATION_DEFAULT, 
 					  WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT*1024, 0, f);
 		}

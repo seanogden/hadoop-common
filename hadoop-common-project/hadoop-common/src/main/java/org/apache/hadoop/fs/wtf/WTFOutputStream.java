@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.wtf.client.Client;
+import org.wtf.client.WTFClientException;
 
 public class WTFOutputStream extends OutputStream {
 	private Configuration conf;
@@ -76,18 +77,18 @@ public class WTFOutputStream extends OutputStream {
 		try {
 			in = new BufferedInputStream(new FileInputStream(backupFile));
 			byte[] data = IOUtils.toByteArray(in);
-			long[] data_sz = {data.length};
-			int[] status = {-1};
 			
-			System.out.println("Writing " + data_sz[0] + " bytes to WTF");
-			long reqid = c.write_sync(fd, data, data_sz, 3, status);
-			if (reqid < 0)
+			System.out.println("Writing " + data.length + " bytes to WTF");
+			if (!c.write(fd, data, 0))
 			{
 				throw new IOException(c.error_location() + ": " + c.error_message());
 			}
 
 			System.out.println("Done.");
 			
+		} catch (WTFClientException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} finally {
 			closeQuietly(in);
 		}    
@@ -179,12 +180,7 @@ public class WTFOutputStream extends OutputStream {
 	  }
 
 	private synchronized void internal_close() throws IOException {
-		int[] status = {-1};
-		long reqid = c.close(fd, status);
-		if (reqid < 0)
-		{
-			throw new IOException(c.error_location() + ": " + c.error_message());
-		}
+		c.close(fd))
 	}
 
 }

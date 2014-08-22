@@ -48,6 +48,10 @@ public class TestWTFFileSystem extends TestCase {
 		
 
 		st = fs.listStatus(new Path("/"));
+		
+		for (int i = 0; i < st.length; ++i)
+			System.out.println(st[i].getPath().toUri().getPath());
+		
 		assertEquals(2, st.length);
 		
 		st = fs.listStatus(new Path("wtf://127.0.0.1:1981/"));
@@ -55,6 +59,10 @@ public class TestWTFFileSystem extends TestCase {
 		
 		st = fs.listStatus(new Path("wtf://127.0.0.1:1981"));
 		assertEquals(2, st.length);
+		
+		fs.delete(new Path("/bar"));
+		st = fs.listStatus(new Path("wtf://127.0.0.1:1981/"));
+		assertEquals(1, st.length);
 		
 		fs.create(new Path("/testoutput/_temporary/0/attempt_local363530570_0001_r_000000_0/part-r-00000"));
 		

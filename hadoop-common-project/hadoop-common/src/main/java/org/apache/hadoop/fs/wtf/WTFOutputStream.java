@@ -180,7 +180,7 @@ public class WTFOutputStream extends OutputStream {
 	  }
 
 	private synchronized void internal_close() throws IOException {
-		c.close(fd))
+		c.close(fd);
 	}
 
 }

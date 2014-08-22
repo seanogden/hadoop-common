@@ -137,10 +137,13 @@ public class WTFFileSystem extends FileSystem {
 					new Path(st.getPath().toUri().getPath().replace(src.toUri().getPath(), dst.toUri().getPath())));
 		}
 		
-		
-		Boolean ok = client.rename(src.toUri().getPath(), dst.toUri().getPath());
-		if (!ok)
-			throw new IOException(client.error_location() + ": " + client.error_message());
+		try {
+			if (!client.rename(src.toUri().getPath(), dst.toUri().getPath()))
+				throw new IOException(client.error_location() + ": " + client.error_message());
+		} catch (WTFClientException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return true;
 	}
 
@@ -185,7 +188,12 @@ public class WTFFileSystem extends FileSystem {
 			}
 			
 			WTFFileAttrs fa = new WTFFileAttrs();
-			client.getattr(fname.toUri().getPath(), fa);
+			try {
+				client.getattr(fname.toUri().getPath(), fa);
+			} catch (WTFClientException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			fstats.add(new WTFFileStatus(fname, fa));
 		}
 		
@@ -207,7 +215,6 @@ public class WTFFileSystem extends FileSystem {
 	@Override
 	public boolean mkdirs(Path f, FsPermission permission) throws IOException {
 		f = fixRelativePart(f);
-		
 		while (!f.isRoot()){
 			Boolean ok = client.mkdir(f.toUri().getPath(), FsPermission.getDirDefault().toShort());		
 			f = f.getParent();
@@ -220,18 +227,23 @@ public class WTFFileSystem extends FileSystem {
 		
 		WTFFileAttrs fa = new WTFFileAttrs();
 		
-	    if (!client.getattr(f.toUri().getPath(), fa)) {
-	        throw new FileNotFoundException(f + ": No such file or directory.");
-	    }
+	    try {
+			if (!client.getattr(f.toUri().getPath(), fa)) {
+			    throw new FileNotFoundException(f + ": No such file or directory.");
+			}
+		} catch (WTFClientException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
-		System.out.println("size = " + fa.size);
+		System.out.println("size = " + fa.sz);
 		
 		return new WTFFileStatus(f, fa);
 	}
 	
 	private static class WTFFileStatus extends FileStatus {
 		WTFFileStatus(Path f, WTFFileAttrs fa) throws IOException {
-			super(fa.size, fa.isDir==1, 
+			super(fa.sz, fa.isDir==1, 
 					(int) WTFConfigKeys.WTF_REPLICATION_DEFAULT, 
 					  WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT*1024, 0, f);
 		}

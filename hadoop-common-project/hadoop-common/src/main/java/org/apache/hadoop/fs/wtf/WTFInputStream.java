@@ -19,36 +19,38 @@ public class WTFInputStream extends FSInputStream {
 
 	  @Override
 	  public synchronized long getPos() throws IOException {
-		  long[] offset = {0};
-		  Boolean ok = c.lseek(fd, offset, SEEK_CUR);
-		  if (!ok)
+		  
+		  long offset = c.lseek(fd, 0, SEEK_CUR);
+		  
+		  if (offset < 0)
 		  {
 			  throw new IOException(c.error_location() + ": " + c.error_message());
 		  }
 
-		  return offset[0];
+		  return offset;
 	  }
 
 	  @Override
 	  public synchronized int available() throws IOException {
 		  long cur = getPos();
-		  long[] offset = {0};
-		  Boolean ok = c.lseek(fd, offset, SEEK_END);
-		  if (!ok)
+		  
+		  long offset = c.lseek(fd, 0, SEEK_END);
+		  if (offset < 0)
 		  {
 			  throw new IOException(c.error_location() + ": " + c.error_message());
 		  }
 		  
 		  seek(cur);
 		  
-		  return (int) (offset[0] - cur);
+		  return (int) (offset - cur);
 	  }
 
 	  @Override
 	  public synchronized void seek(long targetPos) throws IOException {
-		  long[] offset = {targetPos};
-		  Boolean ok = c.lseek(fd, offset, SEEK_SET);
-		  if (!ok)
+		  
+		  long offset = c.lseek(fd, targetPos, SEEK_SET);
+		  
+		  if (offset < 0)
 		  {
 			  throw new IOException(c.error_location() + ": " + c.error_message());
 		  }

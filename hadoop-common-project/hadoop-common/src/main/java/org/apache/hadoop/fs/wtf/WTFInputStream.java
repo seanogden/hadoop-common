@@ -93,8 +93,9 @@ public class WTFInputStream extends FSInputStream {
 	  @Override
 	  public synchronized int read(byte buf[], int off, int len) throws IOException {
 
+		    long[] length = {-1};
 		    try {
-				Boolean ok = c.read(fd, buf, off);
+				Boolean ok = c.read(fd, buf, off, length);
 			    
 				if (!ok)
 			    {
@@ -105,8 +106,10 @@ public class WTFInputStream extends FSInputStream {
 				e.printStackTrace();
 			}
 		    
-		    //TODO add parameter to read to get read length
-		    return (int) buf.length;
+		    if (length[0] == 0)
+		    	return -1;
+		    else
+		    	return (int) length[0];
 	  }
 
 	  /**

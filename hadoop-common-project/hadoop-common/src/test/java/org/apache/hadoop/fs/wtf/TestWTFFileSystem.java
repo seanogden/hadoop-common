@@ -23,18 +23,28 @@ public class TestWTFFileSystem extends TestCase {
 			throws IOException {
 
 		WTFFileSystem fs = new WTFFileSystem(URI.create(initializationUri), new Configuration());
+		
 		System.out.println(fs.getWorkingDirectory());
 		assertEquals(URI.create(expectedUri), fs.getUri());
 		FSDataOutputStream os = fs.create(new Path("/foo"));
 		os.write("hello world".getBytes());
 		os.close();
 		
+
+		
 		byte[] buf = new byte["hello world".length()];
 		FSDataInputStream is = fs.open(new Path("/foo"));
-		is.read(buf);
+		int len = is.read(buf);
+		assertEquals(len, "hello world".length());
+		
+
+		
 		
 		assertTrue(Arrays.equals(buf, "hello world".getBytes()));
 		System.out.println(new String(buf));
+		
+		len = is.read(buf);
+		assertEquals(len, -1);
 		
 		FileStatus fstat = fs.getFileStatus(new Path("/foo"));
 		

@@ -63,11 +63,12 @@ public class WTFInputStream extends FSInputStream {
 
 	  @Override
 	  public synchronized int read() throws IOException {
+		    long[] length = {-1};
 		    byte[] data = {0};
 		    int offset = 0;
 
 			try {
-				Boolean ok = c.read(fd, data, offset);
+				Boolean ok = c.read(fd, data, offset, length);
 				
 			    if (!ok)
 			    {
@@ -80,6 +81,8 @@ public class WTFInputStream extends FSInputStream {
 			}
 			
 
+			if (length[0] == 0)
+				return -1;
 		    
 		    int ret = (int)data[0];
 		    if (ret < 0)

@@ -158,6 +158,8 @@ public class WTFFileSystem extends FileSystem {
 	public FileStatus[] listStatus(Path f) throws FileNotFoundException,
 			IOException {
 		
+		System.out.println("listStatus(" + f.toString() + ")");
+		
 		f = fixRelativePart(f);
 		if (f.toUri().getPath().equals(""))
 		{
@@ -170,22 +172,41 @@ public class WTFFileSystem extends FileSystem {
 		
 		while (it.hasNext())
 		{
-			Path fname = new Path((String)it.next());
+			System.out.println("==========");
+			System.out.println("HASNEXT!!!");
+			String p = (String)it.next();
+			if (p.equals(""))
+			{
+				System.out.println("==========");
+				System.out.println("EMPTY STRING!!!");
+				continue;
+			}
+			
+			Path fname = new Path(p);
 			
 			if (fname.toUri().getPath().equals(f.toUri().getPath()))
 			{
+				System.out.println("==========");
+				System.out.println("SAME PATH!!! " + fname.toString());
 				continue;
 			}
 			
 			if (fname.isRoot())
 			{
+				System.out.println("==========");
+				System.out.println("ROOT PATH!!! " + fname.toString());
 				continue;
 			}
 			
 			if (!fname.getParent().toUri().getPath().equals(f.toUri().getPath()))
 			{
+				System.out.println("==========");
+				System.out.println("TOO DEEP!!! " + fname.toString());
 				continue;
 			}
+			
+			System.out.println("==========");
+			System.out.println("FOUND PATH!!! " + fname.toString());
 			
 			WTFFileAttrs fa = new WTFFileAttrs();
 			try {
@@ -246,6 +267,8 @@ public class WTFFileSystem extends FileSystem {
 			super(fa.sz, fa.isDir==1, 
 					(int) WTFConfigKeys.WTF_REPLICATION_DEFAULT, 
 					  WTFConfigKeys.WTF_BLOCK_SIZE_DEFAULT*1024, 0, f);
+			this.setGroup(fa.group);
+			this.setOwner(fa.owner);
 		}
 	}
 

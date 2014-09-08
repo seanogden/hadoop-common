@@ -9,6 +9,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.UserGroupInformation;
 
 import junit.framework.TestCase;
 
@@ -30,15 +31,10 @@ public class TestWTFFileSystem extends TestCase {
 		os.write("hello world".getBytes());
 		os.close();
 		
-
-		
 		byte[] buf = new byte["hello world".length()];
 		FSDataInputStream is = fs.open(new Path("/foo"));
 		int len = is.read(buf);
 		assertEquals(len, "hello world".length());
-		
-
-		
 		
 		assertTrue(Arrays.equals(buf, "hello world".getBytes()));
 		System.out.println(new String(buf));
@@ -47,7 +43,7 @@ public class TestWTFFileSystem extends TestCase {
 		assertEquals(len, -1);
 		
 		FileStatus fstat = fs.getFileStatus(new Path("/foo"));
-		
+		assertEquals(UserGroupInformation.getCurrentUser().getShortUserName(),fstat.getOwner());
 		assertTrue(fstat.isFile());
 		assertEquals("hello world".length(), fstat.getLen());
 		
